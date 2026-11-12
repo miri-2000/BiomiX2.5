@@ -97,11 +97,9 @@ gt.clust_name <- trimws(as.character(COMMAND_ADVANCED$ADVANCED_OPTION_SNF_NEMO_M
 
 directory2 <- paste(directory,"/Integration",sep="")
 
-if (grepl("\\.xlsx$|\\.xls$", DIR_METADATA)) {
-  METADATA <- read_excel(DIR_METADATA)
-  print("Metadata Excel File read successfully!")
-}else{
-  METADATA <-vroom(DIR_METADATA , delim = "\t", col_names = TRUE)}
+# Metadata is always the TSV copy written by the app (ID read as text)
+METADATA <- vroom(DIR_METADATA, delim = "\t", col_names = TRUE,
+                  col_types = cols(ID = col_character()))
 
 set.seed(123)
 setwd(directory2)
@@ -157,11 +155,9 @@ gt.clust_name <- trimws(as.character(COMMAND_ADVANCED$ADVANCED_OPTION_SNF_NEMO_M
 
 directory2 <- paste(shared_dir,"/Integration",sep="")
 
-if (grepl("\\.xlsx$|\\.xls$", DIR_METADATA)) {
-  METADATA <- read_excel(DIR_METADATA)
-  print("Metadata Excel File read successfully!")
-}else{
-  METADATA <-vroom(DIR_METADATA , delim = "\t", col_names = TRUE)}
+# Metadata is always the TSV copy written by the app (ID read as text)
+METADATA <- vroom(DIR_METADATA, delim = "\t", col_names = TRUE,
+                  col_types = cols(ID = col_character()))
 
 
 # Clean workspace, set seed, set working directory----

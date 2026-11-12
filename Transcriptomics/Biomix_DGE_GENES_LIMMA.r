@@ -94,11 +94,9 @@ if (grepl("\\.xlsx$|\\.xls$", COMMAND$DIRECTORIES[i])) {
                 Matrix <-vroom(COMMAND$DIRECTORIES[i] , delim = "\t", col_names = TRUE)}
 
 
-if (grepl("\\.xlsx$|\\.xls$", DIR_METADATA)) {
-        Metadata_total <- read_excel(DIR_METADATA)
-        print("Metadata Excel File read successfully!")
-        }else{
-                Metadata_total <- vroom(DIR_METADATA, delim = "\t", col_names = TRUE)}
+# Metadata is always the TSV copy written by the app (ID read as text)
+Metadata_total <- vroom(DIR_METADATA, delim = "\t", col_names = TRUE,
+                        col_types = cols(ID = col_character()))
 
 COMMAND_ADVANCED <- combined_json[["COMMANDS_ADVANCED"]]
 log2FC <- as.numeric(COMMAND_ADVANCED$ADVANCED_OPTION_TRASCRIPTOMICS[1])

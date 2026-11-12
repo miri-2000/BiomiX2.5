@@ -11,18 +11,18 @@
 # No business logic lives here — everything is delegated to the modules.
 # =============================================================================
 
-
-
 #Retrieve the environmental variable for docker.
 #ENV BIOMIX_RUNNING_IN_DOCKER=true Da aggiungere al docker file!
-is_in_docker <- as.logical(Sys.getenv("BIOMIX_RUNNING_IN_DOCKER", unset = FALSE))
+is_in_docker <- as.logical(Sys.getenv(
+  "BIOMIX_RUNNING_IN_DOCKER",
+  unset = FALSE
+))
 print(is_in_docker)
 #is_in_docker <- TRUE
 # Fixed path used inside the container when running in Docker. The user is
 # responsible for bind-mounting their own host folder to this exact path,
 # e.g. `docker run -v C:\Users\me\results:/shared ...`
 DOCKER_SHARED_PATH <- "/shared"
-
 
 
 #Loading R enrironemnt or alternatively conda one (to be defined)
@@ -39,7 +39,7 @@ source("modules/mod_startup.R")
 source("modules/mod_inputs.R")
 source("modules/mod_integration.R")
 source("modules/mod_adv_general.R")
-source("modules/mod_adv_metabolomics.R")    # replaces ms1 + ms2 separate modules
+source("modules/mod_adv_metabolomics.R") # replaces ms1 + ms2 separate modules
 source("modules/mod_adv_mofa.R")
 source("modules/mod_adv_snf_nemo.R")
 source("modules/mod_adv_minttea.R")
@@ -75,11 +75,11 @@ BIOMIX_ROOTS <- c(Data = DATA_DIR)
 # =============================================================================
 
 ui <- fluidPage(
-  
   useShinyjs(),
-  
+
   tags$head(
-    tags$style(HTML("
+    tags$style(HTML(
+      "
 
       /* ---- Fonts & base colours ---------------------------------------- */
       @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap');
@@ -362,17 +362,18 @@ ui <- fluidPage(
       }
       .run-status { font-size: 13px; color: var(--biomix-text-muted); }
 
-    "))
+    "
+    ))
   ),
-  
+
   # Main container
   div(
     style = "max-width: 1300px; margin: 0 auto; padding: 0 20px 40px 20px;",
-    
+
     tabsetPanel(
-      id   = "main_tabs",
+      id = "main_tabs",
       type = "tabs",
-      
+
       # -----------------------------------------------------------------------
       # TAB 1: Setup
       # -----------------------------------------------------------------------
@@ -380,35 +381,51 @@ ui <- fluidPage(
         title = "⚙ Setup",
         value = "tab_setup",
         br(),
-        
+
         # Startup module: metadata, groups, output folder
         startupUI("startup"),
-        
-        div(class = "section-label", style = "margin: 24px 0 8px 0;", "Omics Inputs"),
-        
+
+        div(
+          class = "section-label",
+          style = "margin: 24px 0 8px 0;",
+          "Omics Inputs"
+        ),
+
         # Inputs module: 6-row table
         inputsUI("inputs"),
-        
+
         br(),
-        
+
         # Integration module
         integrationUI("integration"),
-        
+
         br(),
-        
+
         # Run panel
         div(
           class = "run-panel",
-          actionButton("btn_adv", "Advanced Options",
-                       class = "btn-default", icon = icon("sliders")),
-          actionButton("btn_run", "Run BiomiX",
-                       class = "btn-run", icon = icon("play")),
-          downloadButton("btn_download_json", "Download JSON",
-                         class = "btn-default", icon = icon("download")),
+          actionButton(
+            "btn_adv",
+            "Advanced Options",
+            class = "btn-default",
+            icon = icon("sliders")
+          ),
+          actionButton(
+            "btn_run",
+            "Run BiomiX",
+            class = "btn-run",
+            icon = icon("play")
+          ),
+          downloadButton(
+            "btn_download_json",
+            "Download JSON",
+            class = "btn-default",
+            icon = icon("download")
+          ),
           uiOutput("run_status")
         )
       ),
-      
+
       # -----------------------------------------------------------------------
       # TAB 2: Advanced Options — inner tabset with all advanced modules
       # -----------------------------------------------------------------------
@@ -418,15 +435,19 @@ ui <- fluidPage(
         br(),
         tabsetPanel(
           type = "tabs",
-          tabPanel("General",            br(), advGeneralUI("adv_general")),
-          tabPanel("Metabolomics",      br(), advMetabolomicsUI("adv_met")),
-          tabPanel("MOFA & Diablo",      br(), advMofaUI("adv_mofa")),
-          tabPanel("SNF / NEMO",         br(), advSnfNemoUI("adv_snf_nemo")),
-          tabPanel("MintTea",            br(), advMintteaUI("adv_minttea")),
-          tabPanel("Metadata Filtering", br(), advMetadataFilterUI("adv_meta_filter"))
+          tabPanel("General", br(), advGeneralUI("adv_general")),
+          tabPanel("Metabolomics", br(), advMetabolomicsUI("adv_met")),
+          tabPanel("MOFA & Diablo", br(), advMofaUI("adv_mofa")),
+          tabPanel("SNF / NEMO", br(), advSnfNemoUI("adv_snf_nemo")),
+          tabPanel("MintTea", br(), advMintteaUI("adv_minttea")),
+          tabPanel(
+            "Metadata Filtering",
+            br(),
+            advMetadataFilterUI("adv_meta_filter")
+          )
         )
       ),
-      
+
       # -----------------------------------------------------------------------
       # TAB 4: QC & Imputation
       # -----------------------------------------------------------------------
@@ -440,10 +461,11 @@ ui <- fluidPage(
         title = "JSON Preview",
         value = "tab_json",
         br(),
-        div(class = "startup-card",
-            div(class = "section-label", "COMBINED_COMMANDS.json — live preview"),
-            br(),
-            verbatimTextOutput("json_preview")
+        div(
+          class = "startup-card",
+          div(class = "section-label", "COMBINED_COMMANDS.json — live preview"),
+          br(),
+          verbatimTextOutput("json_preview")
         )
       )
     )
@@ -456,209 +478,116 @@ ui <- fluidPage(
 # =============================================================================
 
 server <- function(input, output, session) {
-  
   # ---------------------------------------------------------------------------
   # Initialise all modules
   # Each module returns a reactive with its collected data.
   # ---------------------------------------------------------------------------
-  
-  startup_data         <- startupServer("startup",         roots = BIOMIX_ROOTS)
-  inputs_data          <- inputsServer("inputs",           roots = BIOMIX_ROOTS)
-  integration_data     <- integrationServer("integration")
-  adv_general_data     <- advGeneralServer("adv_general",  roots = BIOMIX_ROOTS)
-  adv_met_data         <- advMetabolomicsServer("adv_met", roots = BIOMIX_ROOTS)
-  adv_mofa_data        <- advMofaServer("adv_mofa",        roots = BIOMIX_ROOTS)
-  adv_snf_data         <- advSnfNemoServer("adv_snf_nemo",
-                                           metadata_df = reactive(startup_data()$metadata_df))
-  adv_minttea_data     <- advMintteaServer("adv_minttea")
-  adv_meta_filter_data <- advMetadataFilterServer("adv_meta_filter",
-                                                  metadata_df = reactive(startup_data()$metadata_df))
-  
+
+  startup_data <- startupServer("startup", roots = BIOMIX_ROOTS)
+  inputs_data <- inputsServer("inputs", roots = BIOMIX_ROOTS)
+  integration_data <- integrationServer("integration")
+  adv_general_data <- advGeneralServer("adv_general", roots = BIOMIX_ROOTS)
+  adv_met_data <- advMetabolomicsServer("adv_met", roots = BIOMIX_ROOTS)
+  adv_mofa_data <- advMofaServer("adv_mofa", roots = BIOMIX_ROOTS)
+  adv_snf_data <- advSnfNemoServer(
+    "adv_snf_nemo",
+    metadata_df = reactive(startup_data()$metadata_df)
+  )
+  adv_minttea_data <- advMintteaServer("adv_minttea")
+  adv_meta_filter_data <- advMetadataFilterServer(
+    "adv_meta_filter",
+    metadata_df = reactive(startup_data()$metadata_df)
+  )
+
   # QC & Imputation module — fully independent, no inputs needed from other modules
   qcImputationServer("qc_imputation")
-  
+
   # ---------------------------------------------------------------------------
   # "Advanced Options" button -> switch to the advanced tab
   # ---------------------------------------------------------------------------
   observeEvent(input$btn_adv, {
     updateTabsetPanel(session, "main_tabs", selected = "tab_advanced")
   })
-  
+
   # ---------------------------------------------------------------------------
   # Central reactive: assemble the complete JSON structure.
   # This is the single point where all module outputs are combined.
   # ---------------------------------------------------------------------------
   combined_json_data <- reactive({
-    sd  <- startup_data()
-    id  <- inputs_data()
-    ig  <- integration_data()
-    ag  <- adv_general_data()
+    sd <- startup_data()
+    id <- inputs_data()
+    ig <- integration_data()
+    ag <- adv_general_data()
     met <- adv_met_data()
-    mf  <- adv_mofa_data()
-    sn  <- adv_snf_data()
-    mt  <- adv_minttea_data()
+    mf <- adv_mofa_data()
+    sn <- adv_snf_data()
+    mt <- adv_minttea_data()
     fil <- adv_meta_filter_data()
-    
-    adv <- list(
-      # Row 1: user-configured values
-      list(
-        ADVANCED_OPTION_TRASCRIPTOMICS                      = as.character(ag$tx_fc),
-        ADVANCED_OPTION_SUBGROUPING                         = as.character(ag$sub_zscore2),
-        ADVANCED_OPTION_METABOLOMICS                        = ag$met_fc,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS1         = met$ms1_ion_mode,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS1_2       = met$ms1_pos,
-        ADVANCED_OPTION_METHYLOMICS                         = as.character(ag$meth_fc),
-        ADVANCED_OPTION_MOFA                                = mf$mofa_max_iter,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS2         = as.character(met$ms2_ppm),
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_GENERAL     = met$annot_mode,
-        ADVANCED_OPTION_MOFA_INTERPRETATION_BIBLIOGRAPHY    = mf$biblio_type,
-        ADVANCED_OPTION_MOFA_INTERPRETATION_PATHWAY         = as.character(mf$pathway_padj),
-        ADVANCED_OPTION_MOFA_INTERPRETATION_CLINICAL        = mf$clinical_numerical,
-        ADVANCED_OPTION_METADATA_FILTERING_1                = fil[[1]]$column,
-        ADVANCED_OPTION_METADATA_FILTERING_2                = fil[[2]]$column,
-        ADVANCED_OPTION_METADATA_FILTERING_3                = fil[[3]]$column,
-        ADVANCED_OPTION_METADATA_FILTERING_4                = fil[[4]]$column,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_FILES_INDEX = met$ms1_input_idx,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_FILES       = met$ms1_annot_file,
-        ADVANCED_OPTION_METABOLOMICS_MS2_DIRECTORY          = met$ms2_dir,
-        ADVANCED_OPTION_CLINIC_DATA_DIRECTORY               = mf$clinic_file_numerical,
-        ADVANCED_OPTION_CLUSTERING_OPTIONS                  = ag$clust_distance,
-        ADVANCED_OPTION_MOFA_INTERPRETATION_BIBLIOGRAPHY_2  = as.character(mf$biblio_top_contrib),
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS2_2       = met$ms2_pos,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS2_3       = met$ms2_ion_mode,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS2_3_INDEX = met$ms2_annot_idx,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_FILES_MS2   = met$ms2_annot_file,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS2_4       = met$ms2_ms1_db,
-        ADVANCED_OPTION_SNF_OPTIONS                         = sn$snf_neighbors,
-        ADVANCED_OPTION_NEMO_OPTIONS                        = as.character(sn$nemo_neighbors),
-        ADVANCED_OPTION_SNF_NEMO_METADATA_FEATURES          = sn$snf_enrich_cols,
-        ADVANCED_OPTION_SNF_NEMO_NUMERIC_OPTIONS            = sn$snf_cluster_range,
-        ADVANCED_OPTION_FILE_PATH_DIABLO_DESIGN             = mf$diablo_design_file,
-        ADVANCED_OPTION_DIABLO_OPTIONS                      = mf$diablo_feature_sel,
-        ADVANCED_OPTION_MINTTEA_OPTIONS                     = as.character(mt$n_repeats),
-        ADVANCED_OPTION_MINTTEA_FEATURES                    = as.character(mt$keep_x)
-      ),
-      # Row 2: minimum/alternative thresholds (fixed constants from global.R)
-      #COMMANDS_ADVANCED_ROW2,
-      list(
-        ADVANCED_OPTION_TRASCRIPTOMICS                      = as.character(ag$tx_padj),
-        ADVANCED_OPTION_SUBGROUPING                         = as.character(ag$sub_zscore1),
-        ADVANCED_OPTION_METABOLOMICS                        = ag$met_padj,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS1         = met$ms1_input_idx,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS1_2       = met$ms1_neg,
-        ADVANCED_OPTION_METHYLOMICS                         = as.character(ag$meth_padj),
-        ADVANCED_OPTION_MOFA                                = mf$mofa_convergence,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS2         = as.character(met$ms2_rt),
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_GENERAL     = met$annot_compound_col,
-        ADVANCED_OPTION_MOFA_INTERPRETATION_BIBLIOGRAPHY    = mf$biblio_n_articles,
-        ADVANCED_OPTION_MOFA_INTERPRETATION_PATHWAY         = as.character(mf$pathway_n),
-        ADVANCED_OPTION_MOFA_INTERPRETATION_CLINICAL        = mf$clinical_binary,
-        ADVANCED_OPTION_METADATA_FILTERING_1                = fil[[1]]$data_type,
-        ADVANCED_OPTION_METADATA_FILTERING_2                = fil[[2]]$data_type,
-        ADVANCED_OPTION_METADATA_FILTERING_3                = fil[[3]]$data_type,
-        ADVANCED_OPTION_METADATA_FILTERING_4                = fil[[4]]$data_type,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_FILES_INDEX = as.character("X"),
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_FILES       = as.character("X"),
-        ADVANCED_OPTION_METABOLOMICS_MS2_DIRECTORY          = as.character("X"),
-        ADVANCED_OPTION_CLINIC_DATA_DIRECTORY               = mf$clinic_file_binary,
-        ADVANCED_OPTION_CLUSTERING_OPTIONS                  = ag$clust_method,
-        ADVANCED_OPTION_MOFA_INTERPRETATION_BIBLIOGRAPHY_2  = as.character(mf$biblio_n_keywords),
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS2_2       = met$ms2_neg,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS2_3       = as.character("X"),
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS2_3_INDEX = as.character("X"),
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_FILES_MS2   = as.character("X"),
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS2_4       = met$ms2_ms1_ppm, #Tolerance MS1-MS2 peak matching
-        ADVANCED_OPTION_SNF_OPTIONS                         = sn$snf_variance,
-        ADVANCED_OPTION_NEMO_OPTIONS                        = as.character(sn$apply_scaling_SNF),
-        ADVANCED_OPTION_SNF_NEMO_METADATA_FEATURES          = sn$snf_surv_cols,
-        ADVANCED_OPTION_SNF_NEMO_NUMERIC_OPTIONS            = sn$snf_var_heatmap,
-        ADVANCED_OPTION_FILE_PATH_DIABLO_DESIGN             = as.character("X"),
-        ADVANCED_OPTION_DIABLO_OPTIONS                      = mf$diablo_n_iter,
-        ADVANCED_OPTION_MINTTEA_OPTIONS                     = as.character(mt$n_folds),
-        ADVANCED_OPTION_MINTTEA_FEATURES                    = as.character(mt$design_val)
-      ),
-      # Row 3: maximum values / extra options (fixed constants from global.R)
-      #COMMANDS_ADVANCED_ROW3
-      list(
-        ADVANCED_OPTION_TRASCRIPTOMICS                      = as.character(ag$tx_panel),
-        ADVANCED_OPTION_SUBGROUPING                         = as.character(ag$sub_heatmap),
-        ADVANCED_OPTION_METABOLOMICS                        = ag$cpu_threads,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS1         = met$ms1_ppm,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS1_2       = met$ms1_db,
-        ADVANCED_OPTION_METHYLOMICS                         = as.character(ag$meth_array),
-        ADVANCED_OPTION_MOFA                                = mf$mofa_threshold,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS2         = as.character(met$ms2_ms1_db_priority),
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_GENERAL     = as.character("X"),
-        ADVANCED_OPTION_MOFA_INTERPRETATION_BIBLIOGRAPHY    = ag$mofa_features,
-        ADVANCED_OPTION_MOFA_INTERPRETATION_PATHWAY         = as.character("X"),
-        ADVANCED_OPTION_MOFA_INTERPRETATION_CLINICAL        = mf$clinic_file,
-        ADVANCED_OPTION_METADATA_FILTERING_1                = fil[[1]]$threshold,
-        ADVANCED_OPTION_METADATA_FILTERING_2                = fil[[2]]$threshold,
-        ADVANCED_OPTION_METADATA_FILTERING_3                = fil[[3]]$threshold,
-        ADVANCED_OPTION_METADATA_FILTERING_4                = fil[[4]]$threshold,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_FILES_INDEX = as.character("X"),
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_FILES       = as.character("X"),
-        ADVANCED_OPTION_METABOLOMICS_MS2_DIRECTORY          = as.character("X"),
-        ADVANCED_OPTION_CLINIC_DATA_DIRECTORY               = as.character("X"),
-        ADVANCED_OPTION_CLUSTERING_OPTIONS                  = ag$sub_heatmap,
-        ADVANCED_OPTION_MOFA_INTERPRETATION_BIBLIOGRAPHY_2  = as.character(mf$biblio_top_contrib),
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS2_2       = met$ms2_col_type,
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS2_3       = as.character("X"),
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS2_3_INDEX = as.character("X"),
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_FILES_MS2   = as.character("X"),
-        ADVANCED_OPTION_METABOLOMICS_ANNOTATION_MS2_4       = as.character("X"),
-        ADVANCED_OPTION_SNF_OPTIONS                         = sn$snf_iterations,
-        ADVANCED_OPTION_NEMO_OPTIONS                        = sn$only_common_samples,
-        ADVANCED_OPTION_SNF_NEMO_METADATA_FEATURES          = sn$snf_condition_col,
-        ADVANCED_OPTION_SNF_NEMO_NUMERIC_OPTIONS            = sn$snf_max_features,
-        ADVANCED_OPTION_FILE_PATH_DIABLO_DESIGN             = as.character("X"),
-        ADVANCED_OPTION_DIABLO_OPTIONS                      = as.character("X"),
-        ADVANCED_OPTION_MINTTEA_OPTIONS                     = as.character(mt$edge_threshold),
-        ADVANCED_OPTION_MINTTEA_FEATURES                    = as.character("X")
-      )
-    )
-    
+
+    adv <- build_commands_advanced(ag, met, mf, sn, mt, fil)
+
     list(
-      COMMANDS          = build_commands(id),
-      COMMANDS_MOFA     = build_commands_mofa(ig),
+      COMMANDS = build_commands(id),
+      COMMANDS_MOFA = build_commands_mofa(ig),
       COMMANDS_ADVANCED = adv,
       COMMAND_LINE_ARGS = list(
-        GROUP_1  = sd$group1,
-        GROUP_2  = sd$group2,
+        GROUP_1 = sd$group1,
+        GROUP_2 = sd$group2,
         BASE_DIR = sd$output_dir
       ),
       DIRECTORY_INFO = list(
-        METADATA_DIR = sd$metadata_path,
-        OUTPUT_DIR   = sd$output_dir
+        # Normalised TSV copy written by write_metadata_tsv(), not the
+        # user's original file
+        METADATA_DIR = metadata_tsv_path(sd$output_dir),
+        OUTPUT_DIR = sd$output_dir
       )
     )
   })
-  
+
   # ---------------------------------------------------------------------------
   # JSON Preview tab — live formatted output
   # ---------------------------------------------------------------------------
   output$json_preview <- renderText({
-    jsonlite::toJSON(combined_json_data(), pretty = TRUE,
-                     auto_unbox = TRUE, na = "null")
+    jsonlite::toJSON(
+      combined_json_data(),
+      pretty = TRUE,
+      auto_unbox = TRUE,
+      na = "null"
+    )
   })
-  
+
   # ---------------------------------------------------------------------------
   # Download button: export COMBINED_COMMANDS.json directly from the browser
   # ---------------------------------------------------------------------------
   output$btn_download_json <- downloadHandler(
     filename = function() "COMBINED_COMMANDS.json",
-    content  = function(file) {
+    content = function(file) {
+      # The JSON points to the TSV copy of the metadata, so write it as well
+      # to keep the downloaded JSON usable on its own.
+      sd <- startup_data()
+      if (!is.null(sd$metadata_df) && nchar(sd$output_dir) > 0) {
+        tryCatch(
+          write_metadata_tsv(sd$metadata_df, sd$output_dir),
+          error = function(e) {
+            showNotification(
+              paste0("Could not write the metadata TSV: ", e$message),
+              type = "warning",
+              duration = 8
+            )
+          }
+        )
+      }
       json_string <- jsonlite::toJSON(
         combined_json_data(),
-        pretty      = TRUE,
-        auto_unbox  = TRUE,
-        na          = "null"
+        pretty = TRUE,
+        auto_unbox = TRUE,
+        na = "null"
       )
       writeLines(json_string, file)
     },
     contentType = "application/json"
   )
-  
+
   # ---------------------------------------------------------------------------
   # Run button: validate → write JSON to BASE_DIR → launch BiomiX_BETA.r
   #
@@ -671,14 +600,14 @@ server <- function(input, output, session) {
   # The script does setwd(BASE_DIR) and reads COMBINED_COMMANDS.json from there.
   # ---------------------------------------------------------------------------
   observeEvent(input$btn_run, {
-
     sd <- startup_data()
 
     # Validate prerequisites
     if (!sd$ready) {
       showNotification(
         "Please complete the Setup first: load metadata, select two different groups, and choose an output folder.",
-        type = "warning", duration = 6
+        type = "warning",
+        duration = 6
       )
       return()
     }
@@ -687,57 +616,83 @@ server <- function(input, output, session) {
     # JSON must be written here so BiomiX_BETA.r can find it with setwd()
     base_dir <- normalizePath(getwd(), winslash = "/", mustWork = FALSE)
     json_path <- file.path(base_dir, "COMBINED_COMMANDS.json")
-    
-    
+
     # NEW: shared_dir is the mounted folder visible to sibling containers
     # (e.g. "/shared" in Docker mode). For now, only the JSON needs to live
     # there too — everything else (code, _INSTALL, INPUT/OUTPUT) keeps using
     # base_dir exactly as before.
     shared_dir <- sd$output_dir
     json_path_shared <- file.path(shared_dir, "COMBINED_COMMANDS.json")
-    
-    
+
+    # Step 0: write the metadata as TSV into the output folder. The pipeline
+    # scripts only read this TSV copy (see METADATA_DIR in the JSON).
+    metadata_tsv <- tryCatch(
+      write_metadata_tsv(sd$metadata_df, sd$output_dir),
+      error = function(e) {
+        showNotification(
+          paste0(conditionMessage(e), " BiomiX was not started."),
+          type = "error",
+          duration = 10
+        )
+        NULL
+      }
+    )
+    if (is.null(metadata_tsv)) {
+      return()
+    }
 
     # Step 1: write the JSON
-    tryCatch({
-      json_data <- combined_json_data()
-      write_combined_json(
-        commands          = json_data$COMMANDS,
-        commands_mofa     = json_data$COMMANDS_MOFA,
-        commands_advanced = json_data$COMMANDS_ADVANCED,
-        group1            = sd$group1,
-        group2            = sd$group2,
-        base_dir          = base_dir,
-        metadata_dir      = sd$metadata_path,
-        output_dir        = sd$output_dir,
-        out_path          = json_path
-      )
-      
-      # NEW: also write an identical copy into shared_dir, so sibling
-      # containers (which only mount shared_dir, not base_dir) can read it.
-      file.copy(json_path, json_path_shared, overwrite = TRUE)
-      
-      
-      showNotification(
-        paste0("JSON written to: ", json_path),
-        type = "message", duration = 4
-      )
-    }, error = function(e) {
-      showNotification(
-        paste0("Error writing JSON: ", e$message, " \n If running locally without docker, ignore this message"),
-        type = "error", duration = 8
-      )
-      return()
-    })
+    tryCatch(
+      {
+        json_data <- combined_json_data()
+        write_combined_json(
+          commands = json_data$COMMANDS,
+          commands_mofa = json_data$COMMANDS_MOFA,
+          commands_advanced = json_data$COMMANDS_ADVANCED,
+          group1 = sd$group1,
+          group2 = sd$group2,
+          base_dir = base_dir,
+          metadata_dir = metadata_tsv,
+          output_dir = sd$output_dir,
+          out_path = json_path
+        )
+
+        # NEW: also write an identical copy into shared_dir, so sibling
+        # containers (which only mount shared_dir, not base_dir) can read it.
+        file.copy(json_path, json_path_shared, overwrite = TRUE)
+
+        showNotification(
+          paste0("JSON written to: ", json_path),
+          type = "message",
+          duration = 4
+        )
+      },
+      error = function(e) {
+        showNotification(
+          paste0(
+            "Error writing JSON: ",
+            e$message,
+            " \n If running locally without docker, ignore this message"
+          ),
+          type = "error",
+          duration = 8
+        )
+        return()
+      }
+    )
 
     # Step 2: locate BiomiX_BETA.r (same directory as app.R)
     pipeline_script <- file.path(base_dir, "BiomiX_BETA.r")
 
     if (!file.exists(pipeline_script)) {
       showNotification(
-        paste0("BiomiX_BETA.r not found in: ", base_dir,
-               " — JSON was saved but pipeline was not launched."),
-        type = "warning", duration = 8
+        paste0(
+          "BiomiX_BETA.r not found in: ",
+          base_dir,
+          " — JSON was saved but pipeline was not launched."
+        ),
+        type = "warning",
+        duration = 8
       )
       return()
     }
@@ -756,39 +711,43 @@ server <- function(input, output, session) {
 
     system2(
       command = rscript,
-      args    = c(
+      args = c(
         shQuote(pipeline_script),
         shQuote(sd$group1),
         shQuote(sd$group2),
         shQuote(base_dir),
-        shQuote(shared_dir)     # NEW — posizione 4, per uso futuro (salvare risultati in shared)
+        shQuote(shared_dir) # NEW — posizione 4, per uso futuro (salvare risultati in shared)
       ),
-      wait   = TRUE,    # blocking: output streams to the R console in real time
-      stdout = "",      # "" = inherit the parent R console (not captured)
-      stderr = ""       # "" = same for errors
+      wait = TRUE, # blocking: output streams to the R console in real time
+      stdout = "", # "" = inherit the parent R console (not captured)
+      stderr = "" # "" = same for errors
     )
 
     showNotification(
-      paste0("BiomiX pipeline started! Groups: ", sd$group1, " vs ", sd$group2,
-             ". Results will be saved to: ", sd$output_dir),
-      type     = "message",
+      paste0(
+        "BiomiX pipeline started! Groups: ",
+        sd$group1,
+        " vs ",
+        sd$group2,
+        ". Results will be saved to: ",
+        sd$output_dir
+      ),
+      type = "message",
       duration = 10
     )
   })
-  
-  
-  
+
   # ---------------------------------------------------------------------------
   # Run status indicator (shown next to the Run button)
   # ---------------------------------------------------------------------------
   output$run_status <- renderUI({
     sd <- startup_data()
-    if (!sd$ready)
+    if (!sd$ready) {
       div(class = "run-status", icon("circle-exclamation"), " Setup incomplete")
-    else
-      div(class = "status-ok",  icon("circle-check"),       " Ready to run")
+    } else {
+      div(class = "status-ok", icon("circle-check"), " Ready to run")
+    }
   })
-  
 }
 
 
@@ -796,9 +755,10 @@ server <- function(input, output, session) {
 # LAUNCH
 # =============================================================================
 print("RUNNING")
-message("\n================================================================\n",
-        "  BiomiX GUI is starting.\n",
-        "  Once ready, open your browser and go to: http://localhost:3838\n",
-        "================================================================\n")
+message(
+  "\n================================================================\n",
+  "  BiomiX GUI is starting.\n",
+  "  Once ready, open your browser and go to: http://localhost:3838\n",
+  "================================================================\n"
+)
 shinyApp(ui = ui, server = server)
-

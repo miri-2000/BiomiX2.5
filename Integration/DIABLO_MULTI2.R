@@ -55,11 +55,9 @@ design_input <- as.character(COMMAND_ADVANCED$ADVANCED_OPTION_FILE_PATH_DIABLO_D
 
 
 
-if (grepl("\\.xlsx$|\\.xls$", DIR_METADATA)) {
-        METADATA <- read_excel(DIR_METADATA)
-        print("Metadata Excel File read successfully!")
-}else{
-        METADATA <-vroom(DIR_METADATA , delim = "\t", col_names = TRUE)}
+# Metadata is always the TSV copy written by the app (ID read as text)
+METADATA <- vroom(DIR_METADATA, delim = "\t", col_names = TRUE,
+                  col_types = cols(ID = col_character()))
 
 
 

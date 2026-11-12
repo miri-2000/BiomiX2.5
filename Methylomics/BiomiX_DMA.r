@@ -71,11 +71,9 @@ STATISTICS <- "YES"
 
 
 
-if (grepl("\\.xlsx$|\\.xls$", DIR_METADATA)) {
-        Metadata_total <- read_excel(DIR_METADATA)
-        print("Metadata Excel File read successfully!")
-}else{
-        Metadata_total <- vroom(DIR_METADATA, delim = "\t", col_names = TRUE)}
+# Metadata is always the TSV copy written by the app (ID read as text)
+Metadata_total <- vroom(DIR_METADATA, delim = "\t", col_names = TRUE,
+                        col_types = cols(ID = col_character()))
 
 
 if (grepl("\\.xlsx$|\\.xls$", COMMAND$DIRECTORIES[i])) {
